@@ -507,6 +507,10 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
       ex.category === 'plyometric' || ex.tennis_skills?.some(s => s.includes('爆发') || s.includes('敏捷')) ||
       ex.name_zh.includes('跳绳') || ex.name_zh.includes('侧向')
     ),
+    // 步伐/灵敏（网球专项 - agility 类别）
+    agility: strengthExercises.filter(ex =>
+      ex.category === 'agility'
+    ),
   };
 
   const selected = [];
@@ -572,8 +576,47 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
       primaryPool = [...(pools.legs || []), ...(pools.plyo || [])];
       secondaryPool = [...(pools.shoulder || []), ...(pools.core || [])];
     } else if (focus.includes('步伐') || focus.includes('下肢') || focus.includes('移动')) {
-      primaryPool = [...(pools.legs || []), ...(pools.calf || []), ...(pools.plyo || [])];
-      secondaryPool = [...(pools.core || []), ...(pools.shoulder || [])];
+      // ========== 步伐专项训练：agility 动作占比最大化 ==========
+      // primaryPool: agility(步伐/灵敏) + legs + plyo（保证敏捷类动作主导）
+      primaryPool = [...(pools.agility || []), ...(pools.legs || []), ...(pools.plyo || [])];
+      secondaryPool = [...(pools.core || []), ...(pools.shoulder || []), ...(pools.calf || [])];
+
+      // ---- 步伐专项：强制保证至少2个不同的 agility 动作 ----
+      // 先从 agility 池强制选取 2 个不同动作（如果池子够大）
+      const agilityPool = pools.agility || [];
+      const agilityUsedInDay = [];
+      if (agilityPool.length >= 2) {
+        // 随机取2个不同的 agility 动作
+        const shuffled = [...agilityPool].sort(() => Math.random() - 0.5);
+        for (const ex of shuffled) {
+          if (!usedNames.has(ex.name_zh) && agilityUsedInDay.length < 2) {
+            const picked = pickExercise([ex], strengthLevel);
+            usedNames.add(ex.name);
+            selected.push(picked);
+            agilityUsedInDay.push(ex.name_zh);
+          }
+        }
+        // 如果随机取不够2个（因为 usedNames 冲突），放宽重试
+        if (agilityUsedInDay.length < 2) {
+          for (const ex of agilityPool) {
+            if (!usedNames.has(ex.name_zh) && agilityUsedInDay.length < 2) {
+              const picked = pickExercise([ex], strengthLevel);
+              usedNames.add(ex.name);
+              selected.push(picked);
+              agilityUsedInDay.push(ex.name_zh);
+            }
+          }
+        }
+        console.log(`[步伐专项] dayIndex=${dayIndex} 已选 ${agilityUsedInDay.length} 个敏捷动作: [${agilityUsedInDay.join(', ')}]`);
+      } else if (agilityPool.length === 1) {
+        // 只有1个 agility 动作时也选上
+        const ex = agilityPool[0];
+        if (!usedNames.has(ex.name_zh)) {
+          const picked = pickExercise([ex], strengthLevel);
+          usedNames.add(ex.name);
+          selected.push(picked);
+        }
+      }
     } else {
       // 默认全身综合
       primaryPool = [...(pools.push || []), ...(pools.legs || [])];
@@ -603,7 +646,7 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
   if (selected.length < 3) {
     const allRemaining = strengthExercises.filter(ex => !usedNames.has(ex.name_zh));
     // 按类别顺序补充
-    const fallbackOrder = [pools.shoulder, pools.push, pools.pull, pools.core, pools.legs, pools.wrist, pools.plyo];
+    const fallbackOrder = [pools.agility, pools.shoulder, pools.push, pools.pull, pools.core, pools.legs, pools.wrist, pools.plyo];
     for (const pool of fallbackOrder) {
       if (selected.length >= 4) break;
       const ex = pickFrom(pool);
