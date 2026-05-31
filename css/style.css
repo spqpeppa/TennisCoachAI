@@ -1,0 +1,880 @@
+/* ===== TennisCoach AI - 全局样式 ===== */
+
+:root {
+  --primary: #1a73e8;
+  --primary-light: #4a9af5;
+  --primary-dark: #0d47a1;
+  --accent: #f57c00;
+  --accent-light: #ffad42;
+  --success: #0d8a4e;
+  --warning: #e65100;
+  --danger: #c62828;
+  --bg: #f8f9fa;
+  --bg-card: #ffffff;
+  --text: #202124;
+  --text-secondary: #5f6368;
+  --text-light: #9aa0a6;
+  --border: #dadce0;
+  --border-focus: #1a73e8;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --tennis-green: #4caf50;
+  --tennis-clay: #d84315;
+  --tennis-blue: #1565c0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ===== 顶部导航 ===== */
+.navbar {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 0 2rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.navbar__icon {
+  font-size: 1.8rem;
+}
+.navbar__subtitle {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+/* 导航栏布局 */
+.navbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 导航栏作者联系 */
+.navbar__contact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  background: rgba(255,255,255,0.15);
+  padding: 5px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.navbar__contact-icon { font-size: 1rem; }
+.navbar__contact-name {
+  font-weight: 600;
+}
+
+/* ===== 主容器 ===== */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ===== 卡片 ===== */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s;
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+.card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e8f0fe;
+}
+.card__icon {
+  font-size: 1.5rem;
+}
+.card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.card__desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ===== 表单 ===== */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.form-label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+}
+.form-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.form-row--three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+@media (max-width: 700px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-row--three { grid-template-columns: 1fr; }
+}
+
+/* ===== 表单分节标题 ===== */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1.5px solid #e8f0fe;
+}
+.section-divider__icon {
+  font-size: 1.1rem;
+}
+.section-divider__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.section-divider__hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+/* ===== NTRP 水平选择器 ===== */
+.ntrp-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ntrp-option {
+  position: relative;
+}
+.ntrp-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.ntrp-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 72px;
+  text-align: center;
+}
+.ntrp-label:hover {
+  border-color: var(--primary-light);
+  background: #f0f6ff;
+}
+.ntrp-option input[type="radio"]:checked + .ntrp-label {
+  border-color: var(--primary);
+  background: #e8f0fe;
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+}
+.ntrp-label__value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.ntrp-label__desc {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ===== 技能选择器（复选框） ===== */
+.skill-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.skill-option {
+  position: relative;
+}
+.skill-option input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.skill-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.skill-label:hover {
+  border-color: var(--primary-light);
+  background: #f0f6ff;
+}
+.skill-option input[type="checkbox"]:checked + .skill-label {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+.skill-label__icon {
+  font-size: 1.2rem;
+}
+
+/* ===== 按钮 ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn--primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+.btn--primary:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.btn--primary:active {
+  transform: translateY(0);
+}
+.btn--secondary {
+  background: #fff;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+.btn--secondary:hover {
+  background: #e8f0fe;
+}
+.btn--accent {
+  background: var(--accent);
+  color: white;
+}
+.btn--accent:hover {
+  background: var(--accent-light);
+}
+.btn--outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+}
+.btn--outline:hover {
+  background: #f8f9fa;
+}
+.btn--block {
+  width: 100%;
+  justify-content: center;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+.btn__icon {
+  font-size: 1.2rem;
+}
+
+/* ===== 生成按钮区域 ===== */
+.action-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+/* ===== 加载动画 ===== */
+.loader {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 3rem 0;
+}
+.loader.active {
+  display: flex;
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e8f0fe;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.loader__text {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ===== 训练计划展示区 ===== */
+#plan-section {
+  display: none;
+}
+#plan-section.active {
+  display: block;
+}
+
+.plan-header {
+  background: linear-gradient(135deg, var(--primary) 0%, #0d47a1 100%);
+  color: white;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 2rem;
+  margin: -1.75rem -2rem 0 -2rem;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.plan-header__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.plan-header__subtitle {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.plan-header__contact {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  background: rgba(255,255,255,0.18);
+  display: inline-flex;
+  padding: 5px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+}
+.plan-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 1.25rem 2rem;
+  background: #f0f6ff;
+  margin: 0 -2rem;
+  border-bottom: 1px solid var(--border);
+}
+.plan-profile__item {
+  display: flex;
+  flex-direction: column;
+}
+.plan-profile__label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.plan-profile__value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.plan-profile__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.tag--skill {
+  background: #e8f0fe;
+  color: var(--primary);
+}
+.tag--level {
+  background: #e6f4ea;
+  color: #137333;
+}
+.tag--strength {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+/* ===== 每周概览 ===== */
+.plan-overview {
+  padding: 1.25rem 2rem;
+  background: #f8f9fa;
+  margin: 0 -2rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.plan-overview strong {
+  color: var(--text);
+}
+
+/* ===== 每日计划卡片 ===== */
+.plan-days {
+  padding: 1.5rem 2rem 2rem;
+}
+.plan-day {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.plan-day:hover {
+  box-shadow: var(--shadow-sm);
+}
+.plan-day--rest {
+  opacity: 0.65;
+}
+.plan-day__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--border);
+}
+.plan-day__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary-dark);
+}
+.plan-day__focus {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.plan-day__badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge--train {
+  background: #e8f0fe;
+  color: var(--primary);
+}
+.badge--rest {
+  background: #e6f4ea;
+  color: #137333;
+}
+.plan-day__content {
+  padding: 14px 16px;
+}
+
+/* ===== 热身/放松 ===== */
+.plan-section {
+  margin-bottom: 12px;
+}
+.plan-section__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.plan-section__list {
+  list-style: none;
+  padding: 0;
+}
+.plan-section__list li {
+  padding: 4px 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plan-section__list li::before {
+  content: "•";
+  color: var(--primary-light);
+  font-weight: 700;
+}
+
+/* ===== 训练动作列表（横向并排）===== */
+.exercise-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 680px) {
+  .exercise-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== 训练动作条目 ===== */
+.exercise-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e8f0fe;
+  border-radius: var(--radius-sm);
+  background: #fafbfc;
+  transition: background 0.2s;
+}
+.exercise-item:hover {
+  background: #f0f6ff;
+}
+.exercise-item__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.exercise-item__info {
+  flex: 1;
+  min-width: 0;
+}
+.exercise-item__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.exercise-item__meta {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+.exercise-item__sets {
+  display: inline-block;
+  background: #e8f0fe;
+  color: var(--primary);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.exercise-item__tips {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: #fffde7;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #827717;
+  border-left: 3px solid #fdd835;
+}
+.exercise-item__mistakes {
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: #fbe9e7;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #bf360c;
+  border-left: 3px solid #ef5350;
+}
+.exercise-item__alternatives {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.exercise-item__muscles {
+  margin-top: 4px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.muscle-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #e8f0fe;
+  color: var(--primary-dark);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+/* ===== 休息日 ===== */
+.rest-day {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+.rest-day__icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+.rest-day__text {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ===== ACSM 标准提示 ===== */
+.acsm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #e6f4ea;
+  color: #137333;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* ===== 导出按钮区 ===== */
+.export-bar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border);
+  margin: 0 -2rem;
+  background: #f8f9fa;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+/* ===== 错误提示 ===== */
+.error-msg {
+  display: none;
+  padding: 12px 16px;
+  background: #fbe9e7;
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--danger);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.error-msg.active {
+  display: block;
+}
+
+/* ===== 步骤指示器 ===== */
+.steps-indicator {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  counter-reset: step;
+}
+.step-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.step-item::before {
+  content: counter(step);
+  counter-increment: step;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e8eaed;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  z-index: 1;
+  transition: all 0.3s;
+}
+.step-item.active::before {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(26,115,232,0.2);
+}
+.step-item.completed::before {
+  background: var(--tennis-green);
+  color: white;
+}
+.step-item::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
+  background: #e8eaed;
+  z-index: 0;
+}
+.step-item:last-child::after { display: none; }
+.step-item.completed::after { background: var(--tennis-green); }
+.step-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-align: center;
+}
+.step-item.active .step-label { color: var(--primary); font-weight: 700; }
+.step-item.completed .step-label { color: var(--tennis-green); }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .container { padding: 1rem; }
+  .card { padding: 1.25rem; }
+  .plan-profile { grid-template-columns: 1fr 1fr; padding: 1rem; }
+  .plan-days { padding: 1rem; }
+  .plan-header { padding: 1.5rem; margin: -1.25rem -1.25rem 0 -1.25rem; }
+  .ntrp-selector { gap: 6px; }
+  .ntrp-label { padding: 8px 10px; min-width: 60px; }
+  .skill-selector { gap: 8px; }
+  .skill-label { padding: 8px 14px; font-size: 0.85rem; }
+  .export-bar { flex-direction: column; }
+  .btn--block-mobile { width: 100%; justify-content: center; }
+  .navbar { padding: 0 1rem; height: auto; flex-wrap: wrap; gap: 4px; padding-top: 8px; padding-bottom: 8px; }
+  .navbar__left { gap: 8px; }
+  .navbar__contact { font-size: 0.7rem; padding: 3px 10px; order: -1; width: 100%; justify-content: center; margin-bottom: 2px; }
+}
+
+/* ===== 打印样式（用于 PDF 导出） ===== */
+@page {
+  margin: 1.5cm 1.5cm;
+  /* 隐藏浏览器默认的页眉页脚（URL、标题、页码等） */
+  size: A4;
+}
+
+@media print {
+  body { background: white; }
+  .navbar { display: none; }
+  .action-bar { display: none; }
+  .export-bar { display: none; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+  .plan-header { background: var(--primary) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* 打印时展开所有周分组内容 */
+  .week-content { display: block !important; }
+  /* 每个训练日在新页面前避免截断 */
+  .plan-day { break-inside: avoid; page-break-inside: avoid; }
+  .week-group { break-inside: avoid; page-break-inside: avoid; }
+}
+
+/* ===== 30天计划 - 周分组 ===== */
+.week-group {
+  margin-bottom: 1.5rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.week-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0f6ff 100%);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.week-header:hover {
+  background: linear-gradient(135deg, #d2e3fc 0%, #e8f0fe 100%);
+}
+.week-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary-dark);
+}
+.week-toggle {
+  font-size: 0.78rem;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 3px 10px;
+  border: 1px solid var(--primary-light);
+  border-radius: 999px;
+  background: white;
+  transition: all 0.2s;
+}
+.week-header:hover .week-toggle {
+  background: var(--primary);
+  color: white;
+}
+.week-content {
+  padding: 0;
+}
+.week-content .plan-day {
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+.week-content .plan-day:last-child {
+  border-bottom: none;
+}

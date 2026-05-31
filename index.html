@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TennisCoach AI - 智能网球体能训练助手</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <nav class="navbar">
+    <div class="navbar__left">
+      <div class="navbar__brand">
+        <span class="navbar__icon">🎾</span>
+        <span>TennisCoach AI</span>
+      </div>
+      <div class="navbar__subtitle">智能网球体能训练助手</div>
+    </div>
+    <div class="navbar__contact">
+      <span class="navbar__contact-icon">📮</span> 联系作者 · 小红书 @<span class="navbar__contact-name">Peppa🎾🥕</span>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- 步骤指示器（仅2步） -->
+    <div class="steps-indicator" id="steps-indicator">
+      <div class="step-item active" data-step="1">
+        <div class="step-label">个人信息 & 评估</div>
+      </div>
+      <div class="step-item" data-step="2">
+        <div class="step-label">目标技能</div>
+      </div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="error-msg" id="error-msg"></div>
+
+    <!-- ===== 步骤1：综合信息（基本信息 + 网球水平 + 力量评估）===== -->
+    <div class="card" id="section-1">
+      <div class="card__header">
+        <span class="card__icon">📋</span>
+        <div>
+          <div class="card__title">个人信息 &amp; 运动评估</div>
+          <div class="card__desc">请填写您的基本信息、网球水平和力量测试结果，用于生成个性化训练计划</div>
+        </div>
+      </div>
+
+      <!-- 分节标题：基本信息 -->
+      <div class="section-divider">
+        <span class="section-divider__icon">👤</span>
+        <span class="section-divider__title">基本信息</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">年龄 <span class="required">*</span></label>
+          <input class="form-input" type="number" id="age" min="10" max="80" placeholder="如：28">
+        </div>
+        <div class="form-group">
+          <label class="form-label">性别 <span class="required">*</span></label>
+          <select class="form-select" id="gender">
+            <option value="">请选择</option>
+            <option value="male">男</option>
+            <option value="female">女</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">身高 (cm) <span class="required">*</span></label>
+          <input class="form-input" type="number" id="height" min="100" max="250" placeholder="如：175">
+        </div>
+        <div class="form-group">
+          <label class="form-label">体重 (kg) <span class="required">*</span></label>
+          <input class="form-input" type="number" id="weight" min="30" max="200" placeholder="如：70">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">每周可运动次数 <span class="required">*</span></label>
+          <select class="form-select" id="weekly-exercise-frequency">
+            <option value="">请选择</option>
+            <option value="1">1次</option>
+            <option value="2">2次</option>
+            <option value="3">3次</option>
+            <option value="4">4次</option>
+            <option value="5">5次</option>
+          </select>
+          <div class="form-hint">每周最多能安排的运动天数</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">伤病史 / 注意事项</label>
+          <input class="form-input" type="text" id="injury-history" placeholder="如：左膝旧伤（无请留空）">
+          <div class="form-hint">选填，帮助排除不适合的动作</div>
+        </div>
+      </div>
+
+      <!-- 分节标题：网球水平 -->
+      <div class="section-divider" style="margin-top: 1.5rem;">
+        <span class="section-divider__icon">🎾</span>
+        <span class="section-divider__title">网球水平（NTRP）</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">请选择您的 NTRP 水平 <span class="required">*</span></label>
+        <div class="ntrp-selector" id="ntrp-selector">
+          <!-- 由 JS 动态生成 -->
+        </div>
+        <div class="form-hint" id="ntrp-hint">请选择一个水平等级</div>
+      </div>
+
+      <!-- 分节标题：基础力量评估 -->
+      <div class="section-divider" style="margin-top: 1.5rem;">
+        <span class="section-divider__icon">💪</span>
+        <span class="section-divider__title">基础力量评估</span>
+        <span class="section-divider__hint">用于判断训练水平，做不了填 0</span>
+      </div>
+
+      <div class="form-row form-row--three">
+        <div class="form-group">
+          <label class="form-label">俯卧撑极限次数/分钟 <span class="required">*</span></label>
+          <input class="form-input" type="number" id="pushups" min="0" max="200" placeholder="如：30">
+          <div class="form-hint">1分钟内标准俯卧撑最大次数</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">徒手深蹲次数/分钟 <span class="required">*</span></label>
+          <input class="form-input" type="number" id="squats" min="0" max="200" placeholder="如：40">
+          <div class="form-hint">1分钟内标准徒手深蹲最大次数</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">平板支撑时间（秒）<span class="required">*</span></label>
+          <input class="form-input" type="number" id="plank" min="0" max="3600" placeholder="如：90">
+          <div class="form-hint">标准平板支撑能坚持的最长时间</div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn--primary" onclick="nextStep(2)">下一步：选择目标技能 →</button>
+      </div>
+    </div>
+
+    <!-- ===== 步骤2：目标技能选择 ===== -->
+    <div class="card" id="section-2" style="display:none;">
+      <div class="card__header">
+        <span class="card__icon">🎯</span>
+        <div>
+          <div class="card__title">目标技能选择</div>
+          <div class="card__desc">请选择您想要提升的网球技能（可多选）</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">目标技能 <span class="required">*</span>（至少选一项）</label>
+        <div class="skill-selector" id="skill-selector">
+          <!-- 由 JS 动态生成 -->
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="btn btn--outline" onclick="prevStep(1)">← 上一步</button>
+        <button class="btn btn--accent btn--block-mobile" onclick="generatePlan()">
+          <span class="btn__icon">✨</span> 生成我的训练计划
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== 加载动画 ===== -->
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <div class="loader__text">正在根据您的身体状况和目标技能生成科学训练计划...</div>
+    </div>
+
+    <!-- ===== 训练计划展示区 ===== -->
+    <div id="plan-section">
+      <div class="card" style="overflow:visible;">
+        <div class="plan-header">
+          <div class="plan-header__title">🎾 您的个性化网球训练计划</div>
+          <div class="plan-header__subtitle" id="plan-date-range">训练计划</div>
+        </div>
+
+        <!-- Profile 信息 -->
+        <div class="plan-profile" id="plan-profile">
+          <!-- 由 JS 动态生成 -->
+        </div>
+
+        <!-- 每周概览 -->
+        <div class="plan-overview" id="plan-overview">
+          <!-- 由 JS 动态生成 -->
+        </div>
+
+        <!-- ACSM 标准提示 -->
+        <div class="acsm-badge" id="acsm-badge">
+          <span>📋</span> 本计划遵循 ACSM（美国运动医学会）训练标准
+        </div>
+
+        <!-- 每日计划 -->
+        <div class="plan-days" id="plan-days">
+          <!-- 由 JS 动态生成 -->
+        </div>
+
+        <!-- 导出按钮 -->
+        <div class="export-bar">
+          <button class="btn btn--primary" onclick="exportPlanHTML()">
+            <span class="btn__icon">📄</span> 导出 HTML 文件
+          </button>
+          <button class="btn btn--secondary" onclick="exportPlanPDF()">
+            <span class="btn__icon">📑</span> 下载为 PDF
+          </button>
+          <button class="btn btn--out-line" onclick="resetAll()">
+            <span class="btn__icon">🔄</span> 重新生成
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.container -->
+
+  <!-- JS 依赖 -->
+  <script src="js/knowledge-base.js"></script>
+  <script src="js/prompts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
