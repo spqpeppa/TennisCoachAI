@@ -56,13 +56,13 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">年龄 <span class="required">*</span></label>
-          <input class="form-input" type="number" id="age" min="10" max="80" placeholder="如：28">
+          <input class="form-input" type="number" id="age" min="10" max="80" value="25" placeholder="如：28">
         </div>
         <div class="form-group">
           <label class="form-label">性别 <span class="required">*</span></label>
           <select class="form-select" id="gender">
             <option value="">请选择</option>
-            <option value="male">男</option>
+            <option value="male" selected>男</option>
             <option value="female">女</option>
           </select>
         </div>
@@ -70,11 +70,11 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">身高 (cm) <span class="required">*</span></label>
-          <input class="form-input" type="number" id="height" min="100" max="250" placeholder="如：175">
+          <input class="form-input" type="number" id="height" min="100" max="250" value="170" placeholder="如：175">
         </div>
         <div class="form-group">
           <label class="form-label">体重 (kg) <span class="required">*</span></label>
-          <input class="form-input" type="number" id="weight" min="30" max="200" placeholder="如：70">
+          <input class="form-input" type="number" id="weight" min="30" max="200" value="65" placeholder="如：70">
         </div>
       </div>
       <div class="form-row">
@@ -84,7 +84,7 @@
             <option value="">请选择</option>
             <option value="1">1次</option>
             <option value="2">2次</option>
-            <option value="3">3次</option>
+            <option value="3" selected>3次</option>
             <option value="4">4次</option>
             <option value="5">5次</option>
           </select>
@@ -121,17 +121,17 @@
       <div class="form-row form-row--three">
         <div class="form-group">
           <label class="form-label">俯卧撑极限次数/分钟 <span class="required">*</span></label>
-          <input class="form-input" type="number" id="pushups" min="0" max="200" placeholder="如：30">
+          <input class="form-input" type="number" id="pushups" min="0" max="200" value="20" placeholder="如：30">
           <div class="form-hint">1分钟内标准俯卧撑最大次数</div>
         </div>
         <div class="form-group">
           <label class="form-label">徒手深蹲次数/分钟 <span class="required">*</span></label>
-          <input class="form-input" type="number" id="squats" min="0" max="200" placeholder="如：40">
+          <input class="form-input" type="number" id="squats" min="0" max="200" value="30" placeholder="如：40">
           <div class="form-hint">1分钟内标准徒手深蹲最大次数</div>
         </div>
         <div class="form-group">
           <label class="form-label">平板支撑时间（秒）<span class="required">*</span></label>
-          <input class="form-input" type="number" id="plank" min="0" max="3600" placeholder="如：90">
+          <input class="form-input" type="number" id="plank" min="0" max="3600" value="60" placeholder="如：90">
           <div class="form-hint">标准平板支撑能坚持的最长时间</div>
         </div>
       </div>

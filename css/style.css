@@ -806,9 +806,9 @@ body {
 
 /* ===== 打印样式（用于 PDF 导出） ===== */
 @page {
-  margin: 1.5cm 1.5cm;
-  /* 隐藏浏览器默认的页眉页脚（URL、标题、页码等） */
-  size: A4;
+  margin: 1cm 1cm;
+  /* 横向A4：每周一页 */
+  size: A4 landscape;
 }
 
 @media print {
@@ -816,13 +816,21 @@ body {
   .navbar { display: none; }
   .action-bar { display: none; }
   .export-bar { display: none; }
-  .card { box-shadow: none; border: 1px solid #ccc; }
+  .card { box-shadow: none; border: none; padding: 0; }
   .plan-header { background: var(--primary) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  /* 打印时展开所有周分组内容 */
-  .week-content { display: block !important; }
-  /* 每个训练日在新页面前避免截断 */
-  .plan-day { break-inside: avoid; page-break-inside: avoid; }
-  .week-group { break-inside: avoid; page-break-inside: avoid; }
+  /* 每周容器单独一页 */
+  .week-table-wrap { page-break-after: always; break-after: page; }
+  .week-table-wrap:last-child { page-break-after: avoid; break-after: avoid; }
+  .week-table-header { background: #1a73e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* 行式布局打印优化 */
+  .week-row { break-inside: avoid; page-break-inside: avoid; }
+  .week-row__label { width: 70px; min-width: 70px; padding: 6px 4px; }
+  .ex-card { min-width: 140px; max-width: 200px; flex: 1 1 140px; padding: 5px 7px; font-size: 0.7rem; }
+  .ex-card__name { font-size: 0.68rem; }
+  .ex-card__sets { font-size: 0.58rem; }
+  .ex-card__en, .ex-card__tips, .ex-card__mistakes, .ex-card__alt { font-size: 0.56rem; }
+  .inline-tag { font-size: 0.55rem; padding: 0 5px; }
+  .muscle-tag--sm { font-size: 0.48rem !important; padding: 0 3px !important; height: 13px !important; line-height: 13px !important; }
 }
 
 /* ===== 30天计划 - 周分组 ===== */
@@ -877,4 +885,292 @@ body {
 }
 .week-content .plan-day:last-child {
   border-bottom: none;
+}
+
+/* ===== 28天计划 - 周行式布局（每行=一天，动作卡片横向排列）===== */
+
+/* 周容器 */
+.week-table-wrap {
+  margin-bottom: 2rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.week-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+  color: white;
+}
+
+.week-table-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+.week-table-range {
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* ---- 每天一行 ---- */
+.week-body {
+  /* 无额外padding，行直接排列 */
+}
+
+.week-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #e8eaed;
+  min-height: 60px;
+}
+
+.week-row:last-child {
+  border-bottom: none;
+}
+
+.week-row--rest {
+  background: #fafbfc;
+}
+
+/* 左侧：日期标签（固定宽度） */
+.week-row__label {
+  width: 90px;
+  min-width: 90px;
+  flex-shrink: 0;
+  padding: 10px 8px;
+  background: linear-gradient(180deg, #f0f6ff 0%, #e8f0fe 100%);
+  border-right: 1.5px solid #d0e2ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+}
+
+.week-row--rest .week-row__label {
+  background: linear-gradient(180deg, #f5f5f5 0%, #eeeeee 100%);
+  border-right-color: #ddd;
+}
+
+.week-row__num {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  line-height: 1.2;
+}
+
+.week-row__weekday {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.week-row__focus {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: white;
+  background: var(--primary);
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.week-row__dur {
+  font-size: 0.58rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* 右侧：内容区（动作卡片横向排列）*/
+.week-row__content {
+  flex: 1;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0; /* 允许内容收缩 */
+}
+
+.week-row__content--rest {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* 内容分区（热身/放松） */
+.week-row__section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* 内联小标签（热身/放松）*/
+.inline-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  line-height: 1.7;
+}
+
+.inline-tag--warmup {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+.inline-tag--cooldown {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+/* 动作卡片容器（flex横向排列，自动换行） */
+.week-row__exercises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* ---- 单个动作卡片（紧凑但完整）---- */
+.ex-card {
+  border: 1.5px solid #d0dbec;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  min-width: 170px;
+  max-width: 260px;
+  flex: 1 1 170px; /* 弹性伸缩，基础170px */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.ex-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(26,115,232,0.12);
+}
+
+.ex-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.ex-card__name {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.ex-card__sets {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: white;
+  background: var(--primary);
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ex-card__en {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ex-card__muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 3px;
+}
+
+.muscle-tag--sm {
+  font-size: 0.55rem !important;
+  padding: 0 5px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+}
+
+.ex-card__tips {
+  font-size: 0.63rem;
+  color: #2e7d32;
+  background: #f1f8e9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  line-height: 1.45;
+}
+
+.ex-card__mistakes {
+  font-size: 0.63rem;
+  color: #e65100;
+  background: #fff3e0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  line-height: 1.45;
+}
+
+.ex-card__alt {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 休息日 */
+.rest-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9aa0a6;
+}
+
+.rest-tips {
+  font-size: 0.68rem;
+  color: #bdc1c6;
+}
+
+/* 响应式：小屏适配 */
+@media (max-width: 768px) {
+  .week-row {
+    flex-direction: column;
+  }
+  .week-row__label {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 6px 10px;
+    border-right: none;
+    border-bottom: 1.5px solid #d0e2ff;
+  }
+  .week-row--rest .week-row__label {
+    border-bottom-color: #ddd;
+  }
+  .ex-card {
+    min-width: 140px;
+    flex: 1 1 140px;
+  }
 }

@@ -62,6 +62,16 @@ const TennisCoachKB = {
     "步伐": ["腓肠肌", "比目鱼肌", "股四头肌", "臀大肌", "腘绳肌", "臀中肌"]
   },
 
+  // ========== 目标技能 → 优先动作类别（不受难度过滤限制）==========
+  // 步伐训练的agility类动作属于技能专项，不依赖力量水平，应始终可选
+  skillToCategories: {
+    "正手": { primary: ["strength", "power"], secondary: ["stability"] },
+    "反手": { primary: ["strength", "stability"], secondary: ["power"] },
+    "发球/高压": { primary: ["strength", "power", "stability"], secondary: [] },
+    "截击": { primary: ["strength", "plyometric"], secondary: ["agility"] },
+    "步伐": { primary: ["agility", "plyometric"], secondary: ["strength", "stability"] }
+  },
+
   // ========== NTRP 水平描述 ==========
   ntrpLevels: {
     2.0: { desc: "初学者", trainingFocus: ["动作学习", "基础力量", "运动常识"] },

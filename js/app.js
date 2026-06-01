@@ -20,7 +20,7 @@ const AppState = {
     plank: null
   },
   strengthLevel: null,  // "beginner" | "intermediate" | "advanced"
-  targetSkills: [],
+  targetSkills: ['正手', '步伐'],
   generatedPlan: null
 };
 
@@ -37,6 +37,7 @@ function renderNtrpSelector() {
   container.innerHTML = levels.map(v => `
     <div class="ntrp-option">
       <input type="radio" name="ntrp" id="ntrp-${v}" value="${v}"
+             ${v === 3.0 ? 'checked' : ''}
              onchange="onNtrpChange(${v})">
       <label class="ntrp-label" for="ntrp-${v}">
         <span class="ntrp-label__value">${v}</span>
@@ -44,6 +45,11 @@ function renderNtrpSelector() {
       </label>
     </div>
   `).join('');
+  // 默认选中3.0
+  AppState.tennisLevel = 3.0;
+  const hint = document.getElementById('ntrp-hint');
+  hint.textContent = `已选择：3.0（中级）`;
+  hint.style.color = '#1a73e8';
 }
 
 function getNtrpDesc(v) {
@@ -71,6 +77,7 @@ function renderSkillSelector() {
   container.innerHTML = skills.map(s => `
     <div class="skill-option">
       <input type="checkbox" name="skill" id="skill-${s.id}" value="${s.id}"
+             ${(s.id === '正手' || s.id === '步伐') ? 'checked' : ''}
              onchange="onSkillChange()">
       <label class="skill-label" for="skill-${s.id}">
         <span class="skill-label__icon">${s.icon}</span>
@@ -330,10 +337,10 @@ function generatePlanRuleBased() {
     }
 
     // 今日训练重点（根据目标技能和训练阶段轮换）
-    const focus = getDayFocus(targetSkills, i, trainDaysPattern.size, 28);
+    const focusInfo = getDayFocus(targetSkills, i, trainDaysPattern.size, 28);
     const isFullBody = isFullBodyDay(i, trainDaysPattern, 28);
     const { warmUp, exercises, coolDown } = generateDayWorkout({
-      focus,
+      focus: focusInfo,
       isFullBody,
       strengthLevel,
       recommended,
@@ -348,7 +355,7 @@ function generatePlanRuleBased() {
       dayOfWeek,
       date: dateStr,
       isRestDay: false,
-      focus,
+      focus: focusInfo.focusText,   // 保持focus为字符串用于显示
       warmUp,
       exercises,
       coolDown,
@@ -395,15 +402,19 @@ function getDayFocus(targetSkills, dayIndex, totalTrainDaysPerWeek, totalDays) {
     '截击': '截击反应 + 下肢敏捷',
     '步伐': '步伐移动 + 下肢力量'
   };
-  // 按训练日轮换重点（30天内会多次循环）
+  // 按训练日轮换重点（28天内会多次循环）
   const sorted = [...targetSkills].sort();
   const idx = dayIndex % Math.max(sorted.length, 1);
-  return sorted[idx] ? skillMap[sorted[idx]] : '全身综合力量 + 心肺耐力';
+  const skill = sorted[idx] || null;
+  return {
+    skill: skill,                    // 原始技能名，用于肌肉映射查询
+    focusText: skill ? skillMap[skill] : '全身综合力量 + 心肺耐力'
+  };
 }
 
 function isFullBodyDay(dayIndex, trainDaysPattern, totalDays) {
-  // 训练日较少时，每天都全身；训练日多时，分化训练
-  return trainDaysPattern.size <= 3;
+  // 训练日≤2时全身训练；≥3次/周时走分化训练（按技能匹配动作）
+  return trainDaysPattern.size <= 2;
 }
 
 function generatePlanOverview(targetSkills, strengthLevel, tennisLevel, totalDays) {
@@ -440,14 +451,11 @@ function generateDayWorkout({ focus, isFullBody, strengthLevel, recommended, kb,
   return { warmUp, exercises: selected, coolDown };
 }
 
-function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb, dayIndex, totalDays) {
+function selectExercisesForDay(recommended, focusInfo, isFullBody, strengthLevel, kb, dayIndex, totalDays) {
   // 排除拉伸类动作（它们属于coolDown，不是主训练）
   let strengthExercises = recommended.filter(ex => ex.category !== 'flexibility');
 
   // ===== 按用户力量水平过滤动作难度（避免受伤）=====
-  // beginner  → 仅 beginner 难度
-  // intermediate → beginner + intermediate
-  // advanced → 全部（不限制）
   const difficultyAllow = {
     beginner: ['beginner'],
     intermediate: ['beginner', 'intermediate'],
@@ -455,7 +463,7 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
   };
   const allowed = difficultyAllow[strengthLevel] || ['beginner', 'intermediate'];
   const difficultyFiltered = strengthExercises.filter(ex => {
-    if (!ex.difficulty) return true;  // 无难度标识，默认保留
+    if (!ex.difficulty) return true;
     return allowed.includes(ex.difficulty);
   });
   // 兜底：过滤后动作太少时，放宽至不限制难度（保证计划可生成）
@@ -469,47 +477,51 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
   }
 
   // ===== 动作分类池（基于安全难度池）=====
+  // ⚠️ 注意：保留原始池引用(rawPool)供agility等技能专项动作使用
+  //     技能专项动作（如侧滑步、小碎步）不依赖力量水平，不应被难度过滤剔除
+  const rawPool = strengthExercises;  // 保存原始池（覆盖前的最后引用）
   strengthExercises = safePool;
   const pools = {
-    // 肩部稳定（网球专项关键）
     shoulder: safePool.filter(ex =>
-      ex.target_muscles.some(m => m.includes('肩') || m.includes('三角') || m.includes('棘下') || m.includes('外旋'))
+      ex.target_muscles.some(m => m.includes('肩') || m.includes('三角') || m.includes('棘下') || m.includes('外旋') || m.includes('冈下') || m.includes('小圆') || m.includes('肩胛'))
     ),
-    // 上肢推力（胸/三头）
-    push: strengthExercises.filter(ex =>
+    push: safePool.filter(ex =>
       ex.target_muscles.some(m => m.includes('胸') || m.includes('三头') || ex.name_zh.includes('俯卧撑'))
     ),
-    // 上肢拉力（背/二头）
-    pull: strengthExercises.filter(ex =>
-      ex.target_muscles.some(m => m.includes('背') || m.includes('二头') || m.includes('菱形') || m.includes('阔肌'))
+    pull: safePool.filter(ex =>
+      ex.target_muscles.some(m => m.includes('背') || m.includes('二头') || m.includes('菱形') || m.includes('阔肌') || m.includes('斜方'))
     ),
-    // 核心
-    core: strengthExercises.filter(ex =>
-      ex.target_muscles.some(m => m.includes('腹') || m.includes('竖脊') || m.includes('核心') || ex.name_zh.includes('平板') || ex.name_zh.includes('俄罗斯'))
+    core: safePool.filter(ex =>
+      ex.target_muscles.some(m => m.includes('腹') || m.includes('竖脊') || m.includes('核心') || ex.name_zh.includes('平板') || ex.name_zh.includes('俄罗斯') || ex.name_zh.includes('卷腹') || ex.name_zh.includes('扭转'))
     ),
-    // 下肢主项
-    legs: strengthExercises.filter(ex =>
-      ex.target_muscles.some(m => m.includes('股') || m.includes('臀') || m.includes('腓肠') || m.includes('腘绳')) &&
+    legs: safePool.filter(ex =>
+      (ex.target_muscles.some(m => m.includes('股') || m.includes('臀') || m.includes('腓肠') || m.includes('腘绳') || m.includes('内收'))) &&
       !ex.name_zh.includes('提踵')
     ),
-    // 下肢辅助（小腿）
-    calf: strengthExercises.filter(ex =>
-      ex.target_muscles.some(m => m.includes('腓肠') || m.includes('比目鱼')) ||
+    calf: safePool.filter(ex =>
+      ex.target_muscles.some(m => m.includes('腓肠') || m.includes('比目鱼') || m.includes('小腿')) ||
       ex.name_zh.includes('提踵')
     ),
-    // 前臂/手腕（网球专项）
-    wrist: strengthExercises.filter(ex =>
+    wrist: safePool.filter(ex =>
       ex.target_muscles.some(m => m.includes('前臂') || m.includes('腕')) ||
       ex.name_zh.includes('腕弯举')
     ),
-    // 敏捷/爆发力（网球专项）
-    plyo: strengthExercises.filter(ex =>
+    plyo: safePool.filter(ex =>
       ex.category === 'plyometric' || ex.tennis_skills?.some(s => s.includes('爆发') || s.includes('敏捷')) ||
-      ex.name_zh.includes('跳绳') || ex.name_zh.includes('侧向')
+      ex.name_zh.includes('跳绳') || ex.name_zh.includes('侧向') || ex.name_zh.includes('跳箱') || ex.name_zh.includes('深蹲跳')
     ),
-    // 步伐/灵敏（网球专项 - agility 类别）
-    agility: strengthExercises.filter(ex =>
+    // ⚠️ Agility步伐池：从原始池(rawPool)构建，不受难度过滤限制
+    // 理由：agility是技能专项动作（侧滑步/小碎步等），不依赖力量水平，
+    //       初学者和高级者都需要练习。如果用safePool，beginner级别会丢掉3/5的agility动作。
+    agility: rawPool.filter(ex =>
       ex.category === 'agility'
+    ),
+    rotation: safePool.filter(ex =>
+      ex.category === 'power' && (
+        ex.target_muscles.some(m => m.includes('腹斜') || m.includes('旋转')) ||
+        ex.name_zh.includes('旋转') || ex.name_zh.includes('砍伐') || ex.name_zh.includes('上推') ||
+        ex.name_zh.includes('实心球')
+      )
     ),
   };
 
@@ -526,119 +538,256 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
     return ex;
   }
 
+  // ===== 新增：根据技能名查找目标肌肉群，对练习打分排序 =====
+  function scoreByMuscleRelevance(skillName) {
+    const requiredMuscles = kb.skillToMuscles[skillName] || [];
+    if (requiredMuscles.length === 0) return safePool.map(ex => ({ ex, score: 0 }));
+
+    return safePool.map(ex => {
+      // 计算目标肌肉与所需肌肉的重叠数
+      let overlapCount = 0;
+      const matchedMuscles = [];
+      for (const tm of (ex.target_muscles || [])) {
+        for (const rm of requiredMuscles) {
+          // 双向包含匹配：如 "臀大肌" 包含 "臀"，"股四头肌" 包含 "股"
+          if (tm.includes(rm) || rm.includes(tm) || tm === rm) {
+            overlapCount++;
+            matchedMuscles.push(tm);
+            break; // 每个 target muscle 只计一次
+          }
+        }
+      }
+      // 额外加分：tennis_skills 中包含该技能关键词
+      let bonus = 0;
+      if (ex.tennis_skills && ex.tennis_skills.length > 0) {
+        const skillKeywords = {
+          '正手': ['正手', '击球'],
+          '反手': ['反手', '切削'],
+          '发球/高压': ['发球', '高压', '过顶', '爆发'],
+          '截击': ['截击', '反应', '推挡'],
+          '步伐': ['步伐', '移动', '蹬地', '启动', '回位', '方向']
+        };
+        const keywords = skillKeywords[skillName] || [];
+        for (const ts of ex.tennis_skills) {
+          if (keywords.some(k => ts.includes(k))) { bonus += 0.5; }
+        }
+      }
+      return { ex, score: overlapCount + bonus, matchedMuscles };
+    });
+  }
+
   if (isFullBody) {
-    // ========== 全身训练日：覆盖所有主要肌群，保证4-6个动作 ==========
-    // 1. 肩部稳定（网球必练）
+    // ========== 全身训练日：覆盖所有主要肌群，但感知技能重点 ==========
+    // 基础肌群全覆盖
     const shoulderEx = pickFrom(pools.shoulder);
     if (shoulderEx) selected.push(shoulderEx);
 
-    // 2. 上肢推力
     const pushEx = pickFrom(pools.push);
     if (pushEx) selected.push(pushEx);
 
-    // 3. 上肢拉力
     const pullEx = pickFrom(pools.pull);
     if (pullEx) selected.push(pullEx);
 
-    // 4. 核心
     const coreEx = pickFrom(pools.core);
     if (coreEx) selected.push(coreEx);
 
-    // 5. 下肢主项
     const legEx = pickFrom(pools.legs);
     if (legEx) selected.push(legEx);
 
-    // 6. 网球专项（前臂或敏捷）— 根据focus决定
-    if (focus.includes('发球') || focus.includes('爆发')) {
+    // 根据当日技能重点，增加专项动作（不受频率影响）
+    const skill = focusInfo.skill;
+
+    if (skill === '步伐') {
+      // ---- 步伐日：强制至少2个不同的agility动作 ----
+      const rawAgilityPool = pools.agility || [];
+      const agilityUsedInDay = [];
+      const diffPriority = { [strengthLevel]: 0, beginner: 1, intermediate: 2, advanced: 3 };
+      const sortedAgility = [...rawAgilityPool].sort((a, b) => {
+        const pa = (diffPriority[a.difficulty] ?? 4);
+        const pb = (diffPriority[b.difficulty] ?? 4);
+        return pa !== pb ? pa - pb : Math.random() - 0.5;
+      });
+      for (const ex of sortedAgility) {
+        if (!usedNames.has(ex.name_zh) && agilityUsedInDay.length < 2) {
+          const picked = pickExercise([ex], strengthLevel);
+          usedNames.add(ex.name_zh);
+          selected.push(picked);
+          agilityUsedInDay.push(ex.name_zh);
+        }
+      }
+      console.log(`[全身-步伐专项] 已选 ${agilityUsedInDay.length} 个敏捷: [${agilityUsedInDay.join(', ')}]`);
+    } else if (skill === '发球/高压' || focusInfo.focusText.includes('爆发')) {
+      // 发球爆发力日：增加plyo
       const plyoEx = pickFrom(pools.plyo);
       if (plyoEx) selected.push(plyoEx);
     } else {
+      // 其他技能日：增加前臂/手腕
       const wristEx = pickFrom(pools.wrist);
       if (wristEx) selected.push(wristEx);
     }
 
   } else {
-    // ========== 分化训练日：根据focus选择重点 + 保证至少4个动作 ==========
+    // ========== 分化训练日：基于 skillToMuscles 肌肉映射匹配动作 ==========
+    const skill = focusInfo.skill;
 
-    // 根据focus确定优先肌群
-    let primaryPool, secondaryPool;
+    // ---- 步骤1：获取当日技能需要的目标肌肉群 ----
+    const requiredMuscles = (kb.skillToMuscles[skill] || []).slice();
+    // 扩充：从详细肌肉分组中获取更多关联肌肉
+    const detailGroup = kb.muscleGroups[skill] || {};
+    const allDetailMuscles = [
+      ...(detailGroup.lowerBody || []),
+      ...(detailGroup.trunk || []),
+      ...(detailGroup.acceleration || []),
+      ...(detailGroup.deceleration || []),
+      ...(detailGroup.preparation || []),
+      ...(detailGroup.primary || []),
+      ...(detailGroup.stabilizer || [])
+    ];
+    // 去重合并到需求列表
+    for (const m of allDetailMuscles) {
+      if (!requiredMuscles.some(rm => m.includes(rm) || rm.includes(m))) {
+        requiredMuscles.push(m);
+      }
+    }
 
-    if (focus.includes('正手') || focus.includes('力量')) {
-      primaryPool = [...(pools.push || []), ...(pools.core || [])];
-      secondaryPool = [...(pools.shoulder || []), ...(pools.legs || [])];
-    } else if (focus.includes('反手') || focus.includes('稳定') || focus.includes('控制')) {
-      primaryPool = [...(pools.shoulder || []), ...(pools.pull || [])];
-      secondaryPool = [...(pools.core || []), ...(pools.wrist || [])];
-    } else if (focus.includes('发球') || focus.includes('高压') || focus.includes('爆发')) {
-      primaryPool = [...(pools.shoulder || []), ...(pools.push || []), ...(pools.plyo || [])];
-      secondaryPool = [...(pools.core || []), ...(pools.legs || [])];
-    } else if (focus.includes('截击') || focus.includes('反应') || focus.includes('敏捷')) {
-      primaryPool = [...(pools.legs || []), ...(pools.plyo || [])];
-      secondaryPool = [...(pools.shoulder || []), ...(pools.core || [])];
-    } else if (focus.includes('步伐') || focus.includes('下肢') || focus.includes('移动')) {
-      // ========== 步伐专项训练：agility 动作占比最大化 ==========
-      // primaryPool: agility(步伐/灵敏) + legs + plyo（保证敏捷类动作主导）
-      primaryPool = [...(pools.agility || []), ...(pools.legs || []), ...(pools.plyo || [])];
-      secondaryPool = [...(pools.core || []), ...(pools.shoulder || []), ...(pools.calf || [])];
+    console.log(`[分化训练] day=${dayIndex + 1} | skill=${skill} | 需求肌肉=[${requiredMuscles.join(', ')}]`);
 
-      // ---- 步伐专项：强制保证至少2个不同的 agility 动作 ----
-      // 先从 agility 池强制选取 2 个不同动作（如果池子够大）
-      const agilityPool = pools.agility || [];
+    // ---- 步骤2：对所有安全池动作按肌肉关联度打分 ----
+    const scored = safePool.map(ex => {
+      let overlapCount = 0;
+      const matchedMuscles = [];
+      for (const tm of (ex.target_muscles || [])) {
+        for (const rm of requiredMuscles) {
+          if (tm.includes(rm) || rm.includes(tm) || tm === rm) {
+            overlapCount++;
+            matchedMuscles.push(tm);
+            break;
+          }
+        }
+      }
+      // tennis_skills 关键词加分
+      let bonus = 0;
+      if (ex.tennis_skills) {
+        const skillKeywords = {
+          '正手': ['正手', '击球', '推送'],
+          '反手': ['反手', '切削', '控制', '稳定'],
+          '发球/高压': ['发球', '高压', '过顶', '爆发', '伸展'],
+          '截击': ['截击', '反应', '推挡', '下肢敏'],
+          '步伐': ['步伐', '移动', '蹬地', '启动', '回位', '方向', '覆盖', '准备', '侧向']
+        };
+        const keywords = skillKeywords[skill] || [];
+        for (const ts of ex.tennis_skills) {
+          if (keywords.some(k => ts.includes(k))) bonus += 0.5;
+        }
+      }
+      // 同 category 加分（如步伐日的agility类别）
+      if (skill === '步伐' && ex.category === 'agility') bonus += 2;
+      if (skill === '发球/高压' && ex.category === 'power') bonus += 1;
+      if ((skill === '正手' || skill === '截击') && ex.category === 'strength' &&
+          ex.target_muscles.some(m => m.includes('胸') || m.includes('三头'))) bonus += 1;
+      if (skill === '反手' &&
+          ex.target_muscles.some(m => m.includes('肩') || m.includes('背') || m.includes('后'))) bonus += 1;
+
+      return { ex, score: overlapCount + bonus, matchedMuscles };
+    });
+
+    // 按分数降序排列，同分随机打乱增加多样性
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return Math.random() - 0.5;
+    });
+
+    // 输出TOP10打分供调试
+    const topScores = scored.slice(0, 8).map(s => `${s.ex.name_zh}(${s.score.toFixed(1)})`);
+    console.log(`[分化训练] TOP动作得分: [${topScores.join(', ')}]`);
+
+    // ---- 步骤3：从高到低选取动作，确保相关性和多样性 ----
+
+    // 步伐专项：强制至少2个不同agility动作（agility池不受难度过滤限制）
+    if (skill === '步伐') {
+      const rawAgilityPool = pools.agility || [];  // 来自原始池，全部5个agility都在
       const agilityUsedInDay = [];
-      if (agilityPool.length >= 2) {
-        // 随机取2个不同的 agility 动作
-        const shuffled = [...agilityPool].sort(() => Math.random() - 0.5);
-        for (const ex of shuffled) {
+
+      // 按难度偏好排序：优先选匹配用户水平的，但不排除其他难度
+      const diffPriority = { [strengthLevel]: 0, beginner: 1, intermediate: 2, advanced: 3 };
+      const sortedAgility = [...rawAgilityPool].sort((a, b) => {
+        const pa = (diffPriority[a.difficulty] ?? 4);
+        const pb = (diffPriority[b.difficulty] ?? 4);
+        if (pa !== pb) return pa - pb;
+        return Math.random() - 0.5; // 同难度随机打乱增加多样性
+      });
+
+      console.log(`[步伐专项] day=${dayIndex+1} 原始agility池=${rawAgilityPool.length}个 ` +
+        `[${rawAgilityPool.map(e=>e.name_zh+'('+e.difficulty+')').join(', ')}]`);
+
+      // 强制选取至少2个不同的agility动作
+      for (const ex of sortedAgility) {
+        if (!usedNames.has(ex.name_zh) && agilityUsedInDay.length < 2) {
+          const picked = pickExercise([ex], strengthLevel);
+          usedNames.add(ex.name_zh);
+          selected.push(picked);
+          agilityUsedInDay.push(ex.name_zh);
+        }
+      }
+      // 兜底（理论上不会触发，因为原始池有5个）
+      if (agilityUsedInDay.length < 2) {
+        for (const ex of rawAgilityPool) {
           if (!usedNames.has(ex.name_zh) && agilityUsedInDay.length < 2) {
             const picked = pickExercise([ex], strengthLevel);
-            usedNames.add(ex.name);
+            usedNames.add(ex.name_zh);
             selected.push(picked);
             agilityUsedInDay.push(ex.name_zh);
           }
         }
-        // 如果随机取不够2个（因为 usedNames 冲突），放宽重试
-        if (agilityUsedInDay.length < 2) {
-          for (const ex of agilityPool) {
-            if (!usedNames.has(ex.name_zh) && agilityUsedInDay.length < 2) {
-              const picked = pickExercise([ex], strengthLevel);
-              usedNames.add(ex.name);
-              selected.push(picked);
-              agilityUsedInDay.push(ex.name_zh);
-            }
-          }
-        }
-        console.log(`[步伐专项] dayIndex=${dayIndex} 已选 ${agilityUsedInDay.length} 个敏捷动作: [${agilityUsedInDay.join(', ')}]`);
-      } else if (agilityPool.length === 1) {
-        // 只有1个 agility 动作时也选上
-        const ex = agilityPool[0];
-        if (!usedNames.has(ex.name_zh)) {
-          const picked = pickExercise([ex], strengthLevel);
-          usedNames.add(ex.name);
-          selected.push(picked);
+      }
+      console.log(`[步伐专项] day=${dayIndex+1} 已选 ${agilityUsedInDay.length} 个敏捷动作: [${agilityUsedInDay.join(', ')}]`);
+
+      // 补充腿部/下肢/核心动作（从高分中选，跳过已用的）
+      for (const s of scored) {
+        if (selected.length >= 5) break;
+        if (usedNames.has(s.ex.name_zh)) continue;
+        // 优先选腿部>核心>其他
+        const isLeg = s.ex.target_muscles.some(m =>
+          m.includes('股') || m.includes('臀') || m.includes('腓肠') || m.includes('腘绳') || m.includes('小腿'));
+        const isCore = s.ex.target_muscles.some(m =>
+          m.includes('腹') || m.includes('竖脊') || m.includes('核心'));
+        if (isLeg || isCore || s.score >= 1) {
+          usedNames.add(s.ex.name_zh);
+          selected.push(mapRawExercise(s.ex, strengthLevel));
         }
       }
     } else {
-      // 默认全身综合
-      primaryPool = [...(pools.push || []), ...(pools.legs || [])];
-      secondaryPool = [...(pools.pull || []), ...(pools.core || [])];
+      // ---- 其他技能：按分数选动作，保证至少60%是高相关动作(score>=1) ----
+      let highRelevanceCount = 0;
+      const minTotal = 4;   // 至少4个动作
+      const minHighRel = 3;  // 至少3个高相关性
+
+      for (const s of scored) {
+        if (selected.length >= minTotal && highRelevanceCount >= minHighRel) {
+          // 已满足最低要求，继续补充到5-6个
+          if (selected.length >= 6) break;
+        }
+        if (usedNames.has(s.ex.name_zh)) continue;
+        if (selected.some(sel => sel.name === s.ex.name_zh)) continue;
+
+        usedNames.add(s.ex.name_zh);
+        selected.push(mapRawExercise(s.ex, strengthLevel));
+
+        if (s.score >= 1) highRelevanceCount++;
+      }
     }
 
-    // 从主池选2-3个
-    for (let i = 0; i < Math.min(3, primaryPool.length); i++) {
-      const ex = pickFrom(primaryPool);
-      if (ex) selected.push(ex);
-    }
-
-    // 从副池选1-2个
-    for (let i = 0; i < Math.min(2, secondaryPool.length); i++) {
-      const ex = pickFrom(secondaryPool);
-      if (ex) selected.push(ex);
-    }
-
-    // 每次分化训练都加核心（如还没有的话）
+    // 每次分化训练都加核心（如果还没有的话）
     if (!selected.some(s => (s.targetMuscles || []).some(m => m.includes('腹') || m.includes('竖脊') || m.includes('核心')))) {
       const coreEx = pickFrom(pools.core);
       if (coreEx) selected.push(coreEx);
+    }
+
+    // 肩部稳定性（网球专项基础，如果还没有）
+    if (!selected.some(s => (s.targetMuscles || []).some(m =>
+      m.includes('肩') || m.includes('三角') || m.includes('棘下') || m.includes('外旋')))) {
+      const shoulderEx = pickFrom(pools.shoulder);
+      if (shoulderEx) selected.push(shoulderEx);
     }
   }
 
@@ -665,12 +814,108 @@ function selectExercisesForDay(recommended, focus, isFullBody, strengthLevel, kb
     }
   }
 
+  // ========== 按训练水平限制动作数量 ==========
+  // 初学者动作少而精（≤4），中级/高级适当增加（≤6）
+  const maxExercises = strengthLevel === 'beginner' ? 4 : 6;
+  if (selected.length > maxExercises) {
+    // 截断策略：保留优先级高的动作
+    // 优先级：agility步伐(强制) > 核心/肩部稳定性(基础) > 先选的(高相关性)
+    const priorityScore = (sel) => {
+      let score = 0;
+      // agility 类最高优先（技能专项强制动作）
+      if ((sel.targetMuscles || []).length === 0 && sel.nameEn) {
+        // mapRawExercise 后的目标肌肉可能为空，通过 name 判断
+      }
+      // 通过原始名称判断是否为 agility（从 knowledge-base 中 category=agility 的特征）
+      const agilityKeywords = ['侧滑步', '交叉步', '小碎步', '防守滑步', 'T型跑', '侧向', 'crossover', 'shuffle', 'quick feet', 'defensive', 'T-drill'];
+      if (agilityKeywords.some(k => (sel.name || '').includes(k) || (sel.nameEn || '').toLowerCase().includes(k.toLowerCase()))) {
+        score += 100;
+      }
+      // 核心和肩部稳定性次之
+      if ((sel.targetMuscles || []).some(m => m.includes('腹') || m.includes('竖脊') || m.includes('核心'))) score += 50;
+      if ((sel.targetMuscles || []).some(m => m.includes('肩') || m.includes('三角') || m.includes('棘下') || m.includes('外旋'))) score += 40;
+      // 在 selected 数组中越靠前（越先被选中）分越高
+      score += (selected.length - selected.indexOf(sel));
+      return score;
+    };
+
+    // 按优先级排序后截断
+    const sorted = [...selected].sort((a, b) => priorityScore(b) - priorityScore(a));
+    const truncated = sorted.slice(0, maxExercises);
+    console.log(`[动作数量控制] 等级=${strengthLevel}, 上限=${maxExercises}, 原始=${selected.length}个 → 截断为${truncated.length}个 ` +
+      `[${truncated.map(s => s.name).join(', ')}]`);
+    selected.length = 0;
+    selected.push(...truncated);
+  }
+
   return selected;
+}
+
+// 将原始知识库对象映射为渲染格式（name/nameEn等）
+function mapRawExercise(ex, strengthLevel) {
+  const isAgility = ex.category === 'agility';
+
+  let setsReps;
+  const levelSetsReps = ex.sets_reps?.[strengthLevel] || {};
+  const baseSetsReps = ex.sets_reps?.beginner || { sets: 2, reps: 12, rest_sec: 60 };
+  const advSetsReps = ex.sets_reps?.advanced || {};
+
+  if (isAgility) {
+    // ⚠️ 步伐敏捷类动作：区分时间型 vs 次数型
+    // 时间型动作（有duration_sec）：reps字段无意义(都是1)，应展示时长
+    if (levelSetsReps.duration_sec || advSetsReps.duration_sec) {
+      const duration = (levelSetsReps.duration_sec || advSetsReps.duration_sec || baseSetsReps.duration_sec || 20);
+      setsReps = { sets: levelSetsReps.sets || baseSetsReps.sets, reps: duration + '秒', rest_sec: levelSetsReps.rest_sec || baseSetsReps.rest_sec };
+    } else if (strengthLevel === 'beginner') {
+      // 次数型 + 初学者：只减组数(1组)，取高等级次数
+      const intSetsReps = ex.sets_reps?.intermediate || advSetsReps;
+      setsReps = { sets: 1, reps: (advSetsReps.reps || intSetsReps.reps || levelSetsReps.reps || baseSetsReps.reps), rest_sec: levelSetsReps.rest_sec || baseSetsReps.rest_sec };
+    } else {
+      setsReps = { ...levelSetsReps, ...baseSetsReps }; // 正常按等级取
+    }
+  } else {
+    setsReps = ex.sets_reps?.[strengthLevel] || baseSetsReps;
+  }
+  return {
+    name: ex.name_zh,
+    nameEn: ex.name_en,
+    sets: setsReps.sets,
+    reps: typeof setsReps.reps === 'string' ? setsReps.reps : setsReps.reps,
+    weight: getWeightSuggestion(ex, strengthLevel),
+    restSec: setsReps.rest_sec,
+    tips: (ex.execution_tips || []).slice(0, 3),
+    commonMistakes: ex.common_mistakes || [],
+    alternatives: ex.alternatives || [],
+    targetMuscles: ex.target_muscles || []
+  };
 }
 
 function pickExercise(exercises, level) {
   const ex = exercises[Math.floor(Math.random() * exercises.length)];
-  const setsReps = ex.sets_reps?.[level] || ex.sets_reps?.beginner || { sets: 2, reps: 12, rest_sec: 60 };
+  const isAgility = ex.category === 'agility';
+
+  let setsReps;
+  const levelSetsReps = ex.sets_reps?.[level] || {};
+  const baseSetsReps = ex.sets_reps?.beginner || { sets: 2, reps: 12, rest_sec: 60 };
+  const advSetsReps = ex.sets_reps?.advanced || {};
+
+  if (isAgility) {
+    // 步伐敏捷类：区分时间型 vs 次数型
+    if (levelSetsReps.duration_sec || advSetsReps.duration_sec) {
+      // 时间型动作：展示时长而不是无意义的 reps=1
+      const duration = (levelSetsReps.duration_sec || advSetsReps.duration_sec || baseSetsReps.duration_sec || 20);
+      setsReps = { sets: levelSetsReps.sets || baseSetsReps.sets, reps: duration + '秒', rest_sec: levelSetsReps.rest_sec || baseSetsReps.rest_sec };
+    } else if (level === 'beginner') {
+      // 次数型 + 初学者：1组 × 高等级次数
+      const intSetsReps = ex.sets_reps?.intermediate || advSetsReps;
+      setsReps = { sets: 1, reps: (advSetsReps.reps || intSetsReps.reps || levelSetsReps.reps || baseSetsReps.reps), rest_sec: levelSetsReps.rest_sec || baseSetsReps.rest_sec };
+    } else {
+      setsReps = { ...levelSetsReps, ...baseSetsReps }; // 正常按等级取
+    }
+  } else {
+    setsReps = ex.sets_reps?.[level] || baseSetsReps;
+  }
+
   return {
     name: ex.name_zh,
     nameEn: ex.name_en,
@@ -791,38 +1036,104 @@ function renderOverview(overview, totalDays) {
 
 function renderDays(days) {
   const container = document.getElementById('plan-days');
-  const isThirtyDay = days.length > 7;
+  const isMultiWeek = days.length > 7;
 
-  if (!isThirtyDay) {
-    // 7天计划：原样渲染
+  if (!isMultiWeek) {
+    // 7天计划：原样渲染卡片
     container.innerHTML = days.map(day => renderDayCard(day)).join('');
     return;
   }
 
-  // 30天计划：按周分组，可折叠
+  // 28天计划：每周一张横向表格
   const weeks = [];
   for (let i = 0; i < days.length; i += 7) {
     weeks.push(days.slice(i, i + 7));
   }
 
   container.innerHTML = weeks.map((weekDays, weekIdx) => {
-    const weekNum = weekIdx + 1;
-    const weekLabel = `第${weekNum}周（第${weekDays[0].dayIndex + 1}-${weekDays[weekDays.length - 1].dayIndex + 1}天）`;
-    const weekId = `week-${weekIdx}`;
-    const isFirstWeek = weekIdx === 0;
+    return renderWeekTable(weekDays, weekIdx);
+  }).join('');
+}
+
+// 渲染单周：行式布局（每行=一天，动作卡片横向排列）
+function renderWeekTable(weekDays, weekIdx) {
+  const weekNum = weekIdx + 1;
+  const dayNums = weekDays.map(d => d.dayIndex + 1);
+  const DAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+  // 每天一行：左侧标签 + 右侧内容（动作卡片横向排列）
+  const dayRows = weekDays.map((day, i) => {
+    const dayNum = dayNums[i];
+    const dayLabel = DAY_LABELS[i];
+    const isRest = day.isRestDay;
+
+    if (isRest) {
+      return `
+        <div class="week-row week-row--rest">
+          <div class="week-row__label">
+            <div class="week-row__num">第${dayNum}天</div>
+            <div class="week-row__weekday">${dayLabel}</div>
+          </div>
+          <div class="week-row__content week-row__content--rest">
+            <span class="rest-badge">😴 休息日</span>
+            ${(day.coolDown || []).length > 0 ? `<span class="rest-tips">${(day.coolDown || []).join(' / ')}</span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // 热身标签（紧凑内联）
+    const warmupTags = (day.warmUp || []).map(w =>
+      `<span class="inline-tag inline-tag--warmup">${w}</span>`
+    ).join('');
+
+    // 动作卡片（横向排列，完整内容）
+    const exCards = (day.exercises || []).map(ex => `
+      <div class="ex-card">
+        <div class="ex-card__head">
+          <span class="ex-card__name">${ex.name}</span>
+          <span class="ex-card__sets">${ex.sets}×${ex.reps}</span>
+        </div>
+        ${ex.nameEn ? `<div class="ex-card__en">${ex.nameEn}</div>` : ''}
+        ${(ex.targetMuscles || []).length > 0 ? `
+        <div class="ex-card__muscles">${(ex.targetMuscles || []).map(m => `<span class="muscle-tag muscle-tag--sm">${m}</span>`).join('')}</div>` : ''}
+        ${ex.tips && ex.tips.length > 0 ? `<div class="ex-card__tips">💡 ${ex.tips.join('；')}</div>` : ''}
+        ${ex.commonMistakes && ex.commonMistakes.length > 0 ? `<div class="ex-card__mistakes">⚠️ ${ex.commonMistakes.join('；')}</div>` : ''}
+        ${ex.alternatives && ex.alternatives.length > 0 ? `<div class="ex-card__alt">🔄 ${ex.alternatives.join('/')}</div>` : ''}
+      </div>
+    `).join('');
+
+    // 放松标签
+    const cooldownTags = (day.coolDown || []).map(w =>
+      `<span class="inline-tag inline-tag--cooldown">${w}</span>`
+    ).join('');
 
     return `
-      <div class="week-group">
-        <div class="week-header" onclick="toggleWeek('${weekId}')">
-          <span class="week-title">📅 ${weekLabel}</span>
-          <span class="week-toggle" id="${weekId}-toggle">${isFirstWeek ? '收起' : '展开'}</span>
+      <div class="week-row">
+        <div class="week-row__label">
+          <div class="week-row__num">第${dayNum}天</div>
+          <div class="week-row__weekday">${dayLabel}</div>
+          <div class="week-row__focus">${day.focus || ''}</div>
+          <div class="week-row__dur">${day.durationMin}分钟</div>
         </div>
-        <div class="week-content" id="${weekId}" style="display: ${isFirstWeek ? 'block' : 'none'};">
-          ${weekDays.map(day => renderDayCard(day)).join('')}
+        <div class="week-row__content">
+          ${warmupTags ? `<div class="week-row__section week-row__section--warmup">${warmupTags}</div>` : ''}
+          <div class="week-row__exercises">${exCards}</div>
+          ${cooldownTags ? `<div class="week-row__section week-row__section--cooldown">${cooldownTags}</div>` : ''}
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
+
+  return `
+    <div class="week-table-wrap" id="week-table-${weekIdx}">
+      <div class="week-table-header">
+        <span class="week-table-title">📅 第${weekNum}周</span>
+        <span class="week-table-range">第${dayNums[0]}-${dayNums[dayNums.length-1]}天</span>
+      </div>
+      <div class="week-body">
+        ${dayRows}
+      </div>
+    </div>
+  `;
 }
 
 // 渲染单天训练卡片（供 renderDays 调用）
@@ -1034,7 +1345,7 @@ function generateStandaloneHTML(plan) {
 </html>`;
 }
 
-// 生成所有周全部展开的 days HTML（用于导出/打印）
+// 生成所有周全部展开的 days HTML（用于导出/打印）—— 同样使用表格布局
 function generateExpandedDaysHTML(days) {
   const isMultiWeek = days.length > 7;
   if (!isMultiWeek) {
@@ -1044,22 +1355,7 @@ function generateExpandedDaysHTML(days) {
   for (let i = 0; i < days.length; i += 7) {
     weeks.push(days.slice(i, i + 7));
   }
-  return weeks.map((weekDays, weekIdx) => {
-    const weekNum = weekIdx + 1;
-    const weekLabel = `第${weekNum}周（第${weekDays[0].dayIndex + 1}-${weekDays[weekDays.length - 1].dayIndex + 1}天）`;
-    const weekId = `week-export-${weekIdx}`;
-    return `
-      <div class="week-group">
-        <div class="week-header" onclick="toggleWeek('${weekId}')">
-          <span class="week-title">📅 ${weekLabel}</span>
-          <span class="week-toggle" id="${weekId}-toggle">收起</span>
-        </div>
-        <div class="week-content" id="${weekId}" style="display: block;">
-          ${weekDays.map(day => renderDayCard(day)).join('')}
-        </div>
-      </div>
-    `;
-  }).join('');
+  return weeks.map((weekDays, weekIdx) => renderWeekTable(weekDays, weekIdx)).join('');
 }
 
 function getInlineCSS() {
@@ -1125,8 +1421,49 @@ function getInlineCSS() {
     .week-content { padding: 0; }
     .week-content .plan-day { margin: 0; border-radius: 0; border-left: none; border-right: none; border-top: none; }
     .week-content .plan-day:last-child { border-bottom: none; }
-    @page { margin: 1.5cm 1.5cm; size: A4; }
-    @media print { .navbar { display: none; } .week-content { display: block !important; } .plan-day { break-inside: avoid; page-break-inside: avoid; } }
+    /* 周行式布局样式（导出HTML用） */
+    .week-table-wrap { margin-bottom: 2rem; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .week-table-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); color: white; }
+    .week-table-title { font-weight: 700; font-size: 0.95rem; }
+    .week-table-range { font-size: 0.8rem; font-weight: 400; opacity: 0.85; }
+    .week-row { display: flex; align-items: stretch; border-bottom: 1px solid #e8eaed; min-height: 60px; }
+    .week-row:last-child { border-bottom: none; }
+    .week-row--rest { background: #fafbfc; }
+    .week-row__label { width: 90px; min-width: 90px; flex-shrink: 0; padding: 10px 8px; background: linear-gradient(180deg, #f0f6ff 0%, #e8f0fe 100%); border-right: 1.5px solid #d0e2ff; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; }
+    .week-row--rest .week-row__label { background: linear-gradient(180deg, #f5f5f5 0%, #eeeeee 100%); border-right-color: #ddd; }
+    .week-row__num { font-size: 0.78rem; font-weight: 800; color: #0d47a1; line-height: 1.2; }
+    .week-row__weekday { font-size: 0.65rem; color: #5f6368; }
+    .week-row__focus { font-size: 0.62rem; font-weight: 600; color: white; background: #1a73e8; padding: 1px 7px; border-radius: 999px; margin-top: 3px; }
+    .week-row__dur { font-size: 0.58rem; color: #5f6368; }
+    .week-row__content { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .week-row__content--rest { flex-direction: row; align-items: center; gap: 10px; justify-content: center; }
+    .week-row__section { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .inline-tag { display: inline-flex; align-items: center; font-size: 0.62rem; padding: 1px 7px; border-radius: 999px; white-space: nowrap; line-height: 1.7; }
+    .inline-tag--warmup { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+    .inline-tag--cooldown { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+    .week-row__exercises { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+    .ex-card { border: 1.5px solid #d0dbec; border-radius: 8px; padding: 7px 10px; background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%); min-width: 170px; max-width: 260px; flex: 1 1 170px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .ex-card__head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .ex-card__name { font-size: 0.76rem; font-weight: 700; color: #3c4043; line-height: 1.3; }
+    .ex-card__sets { font-size: 0.66rem; font-weight: 700; color: white; background: #1a73e8; padding: 1px 7px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+    .ex-card__en { font-size: 0.6rem; color: #5f6368; font-style: italic; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ex-card__muscles { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 3px; }
+    .muscle-tag--sm { font-size: 0.55rem !important; padding: 0 5px !important; height: 16px !important; line-height: 16px !important; }
+    .ex-card__tips { font-size: 0.63rem; color: #2e7d32; background: #f1f8e9; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; line-height: 1.45; }
+    .ex-card__mistakes { font-size: 0.63rem; color: #e65100; background: #fff3e0; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; line-height: 1.45; }
+    .ex-card__alt { font-size: 0.6rem; color: #5f6368; line-height: 1.4; }
+    .rest-badge { font-size: 0.85rem; font-weight: 600; color: #9aa0a6; }
+    .rest-tips { font-size: 0.68rem; color: #bdc1c6; }
+    @page { margin: 1cm 1cm; size: A4 landscape; }
+    @media print {
+      .navbar { display: none; }
+      .week-table-wrap { page-break-after: always; break-after: page; }
+      .week-table-wrap:last-child { page-break-after: avoid; break-after: avoid; }
+      .week-table-header { background: #1a73e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .week-row { break-inside: avoid; }
+      .week-row__label { width: 70px; min-width: 70px; padding: 6px 4px; }
+      .ex-card { min-width: 140px; max-width: 200px; flex: 1 1 140px; padding: 5px 7px; }
+    }
     @media (max-width: 768px) {
       .container { padding: 1rem; }
       .plan-profile { grid-template-columns: 1fr 1fr; padding: 1rem; }
